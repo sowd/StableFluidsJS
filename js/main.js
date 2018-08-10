@@ -22,7 +22,7 @@ onload = function(){
     // https://www.youtube.com/watch?v=4_KkHLimetQ
     // http://irukanobox.blogspot.com/2016/06/threejstrackballcontrols.html
     const ctrl = new THREE.TrackballControls( camera );
-    ctrl.addEventListener('change',()=>{renderer.render( scene, camera);});
+    ctrl.addEventListener('change',()=>{renderer.render( scene, camera );});
 
     // Rendering loop
     function animate() {
@@ -31,20 +31,34 @@ onload = function(){
     }
     animate();
 
+    // Define shape
+    setupGeometry(scene);
+
+    // Render first frame
+    renderer.render( scene, camera );
+};
+
+function setupGeometry(scene){
     /////////////////////////////////////////////////////
     // Geometry / material settings
     // Vertex/fragment shaders defined in index.html & render.js
     let material = genShaderMaterial();
 
     //  Set rendering geometry
-    let meshes = [] ;
-    for( let z = -0.5 ; z <= 0.5 ; z += 0.1 ){
-	const geometry = new THREE.PlaneGeometry( 1, 1 );
+    for( let z = -0.5 ; z <= 0.5 ; z += 0.05 ){
+
+	const geometry = new THREE.Geometry();
+	const siz = 0.5 ;
+	geometry.vertices.push(new THREE.Vector3(-siz,  siz, z)); 
+	geometry.vertices.push(new THREE.Vector3( siz,  siz, z)); 
+	geometry.vertices.push(new THREE.Vector3( siz, -siz, z)); 
+	geometry.vertices.push(new THREE.Vector3(-siz, -siz, z)); 
+	geometry.faces.push(new THREE.Face3(0, 1, 2)); 
+	geometry.faces.push(new THREE.Face3(0, 3, 2));
+
+	//const geometry = new THREE.PlaneGeometry( 1, 1 ); mesh.position.z = z ;
 	//let geometry = new THREE.BoxGeometry( 1, 1, 1 );
-	//let material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 	let mesh = new THREE.Mesh( geometry, material );
-	mesh.position.z = z ;
 	scene.add( mesh );
-	meshes.push(mesh);
     }
-};
+}

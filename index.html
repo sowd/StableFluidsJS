@@ -19,26 +19,22 @@
   <script src="js/TrackballControls.js"></script>
 
   <!-- load shaders and external functions -->
+  <!-- jp tutorial: https://qiita.com/konweb/items/ec8fa8cd3bc33df14933 -->
   <script type="x-shader/x-vertex" id="vertexshader">
-    precision mediump float;
-    attribute vec4 color;
-    varying vec4 vColor;
+    attribute vec4 color;   // color
+    varying vec3 vPosition;
 
     void main() {
-      vColor = color;
-      gl_PointSize = 1.5;
+      vPosition = position;
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-      //gl_Position = projectionMatrix * vec4( position, 1.0 );
     }
   </script>
   <script type="x-shader/x-fragment" id="fragmentshader">
     precision mediump float;
-    uniform float time;
-    varying vec4 vColor;
+    varying vec3 vPosition;
 
     void main() {
-      float t = time * 0.001;
-      gl_FragColor = vec4( vColor.r * abs(sin(t)), vColor.g * abs(cos(t)), vColor.b * abs(sin(t)), 1.0 );
+      gl_FragColor = vec4( vPosition.x+0.5,vPosition.y+0.5,vPosition.z+0.5, 1.0 );
     }
   </script>
   <script src="js/render.js"></script>
