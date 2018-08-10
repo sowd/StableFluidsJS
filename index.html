@@ -32,6 +32,7 @@
   <script type="x-shader/x-fragment" id="fragmentshader">
     precision mediump float;
     varying vec3 vPosition;
+    uniform float bLinear;
     uniform float z_size;
     uniform float d_alpha;
     uniform sampler2D texture;
@@ -40,10 +41,19 @@
       vec4 vpos = vec4( vPosition.x+0.5,vPosition.y+0.5,vPosition.z+0.5, 1.0 );
       gl_FragColor = vpos;
 
-      float iz = floor( vpos.z * z_size + 0.5) ;
-      float tx = (iz + vpos.x) / z_size ;
-      gl_FragColor = texture2D( texture, vec2(tx,vpos.y) );
-      //gl_FragColor.w = gl_FragColor.w <0.5 ? 0.0 : 1.0;
+      float z = vpos.z * z_size ;
+      float iz = floor( z ) ;
+      float dz = z-iz ;
+      float tx_1 = (iz     + vpos.x) / z_size ;
+      float tx_2 = (iz+1.0 + vpos.x) / z_size ;
+
+      // Linear interpolation or nearest neighbor
+      dz = mix( 0.0 , dz , bLinear ) ;
+
+      gl_FragColor =
+            (1.0-dz) * texture2D( texture, vec2(tx_1,vpos.y) )
+            +    dz  * texture2D( texture, vec2(tx_2,vpos.y) ) ;
+
       gl_FragColor.w = d_alpha * gl_FragColor.w ;
     }
   </script>

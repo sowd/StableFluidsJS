@@ -1,5 +1,13 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
+//const xsiz = 8, ysiz = 8, zsiz = 8 ;
+const xsiz = 128, ysiz = 128, zsiz = 128 ;
+const bFloatVoxel = true ; // if false, voxel is stored as uint8
+const bLinearTextureInterpolation = true ; // if false, texture is nearest neighbor
+
+const numZPlanes = 128 ; // Number of planes to slice volume
+const voxelBrightness = 30.0 ;
+
 onload = function(){
     // Start creation of the whole scene
     const scene = new THREE.Scene();
@@ -32,7 +40,6 @@ onload = function(){
     animate();
 
     // Define volume
-    const xsiz = 128, ysiz = 128, zsiz = 128 ;
     let srcVoxel = [];
     for( let zi=0;zi<zsiz;++zi ){
 	srcVoxel.push([]);
@@ -40,9 +47,6 @@ onload = function(){
 	    srcVoxel[zi].push([]);
 	    for( let xi=0;xi<xsiz;++xi ){
 		srcVoxel[zi][yi].push( [1,1,1,1] );
-		//let dist = Math.sqrt( _x*_x + _y*_y + _z*_z );
-		//let density = (dist < 1 ? 1.0-dist : 0) ; // ball
-		//srcVoxel[zi][yi].push( [density,density,density,density] );
 	    }
 	}
     }
@@ -50,9 +54,10 @@ onload = function(){
     setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz)
 
 
-    Render.allocate(xsiz,ysiz,zsiz);
+    Render.allocate(xsiz,ysiz,zsiz
+		    , bFloatVoxel , bLinearTextureInterpolation );
     Render.set4DFloatVoxelArray(srcVoxel);
-    Render.setScene(scene,128 /*zPlanes*/, 3.0 /*Brightness*/);
+    Render.setScene( scene , numZPlanes , voxelBrightness );
 
     // Render first frame
     renderer.render( scene, camera );
@@ -67,7 +72,7 @@ function setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz){
 		let _y = 2.0*yi/(ysiz-1) - 1 ;
 		for( let xi=0;xi<xsiz;++xi ){
 		    let _x = 2.0*xi/(xsiz-1) - 1 ;
-		    srcVoxel[zi][yi][xi][rgba] = noise.perlin3(_x,_y,_z) ;
+		    srcVoxel[zi][yi][xi][rgba] = Math.abs( noise.perlin3(_x,_y,_z) ) ;
 		}
 	    }
 	}

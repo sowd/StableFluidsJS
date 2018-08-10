@@ -1,6 +1,7 @@
 const Render = {
-    allocate : function( xsiz , ysiz , zsiz , bUInt8){
-	this.bUInt8 = (bUInt8 !== false) ; // setting
+    allocate : function( xsiz , ysiz , zsiz , bFloat , bLinear ){
+	this.bFloat = (bFloat !== false) ;
+	this.bLinear = (bLinear !== false) ;
 
 	this.xsiz = xsiz ; this.ysiz = ysiz ; this.zsiz = zsiz ;
 	this.tx_width = xsiz * zsiz , this.tx_height = ysiz ;
@@ -8,9 +9,9 @@ const Render = {
 	this.getVolIdx = function(ix,iy,iz){
 	    return 4*( (iz*xsiz + ix)  + iy*(xsiz*zsiz) ) ;
 	} ;
-	this.vol = (this.bUInt8
-		    ? new Uint8Array( 4 * this.tx_width * this.tx_height )
-		    : new Float32Array( 4 * this.tx_width * this.tx_height ) );
+	this.vol = (this.bFloat
+		    ? new Float32Array( 4 * this.tx_width * this.tx_height )
+		    : new Uint8Array( 4 * this.tx_width * this.tx_height ) );
     },
     set4DFloatVoxelArray : function( vData /*[iz][iy][ix]*/ ){
 	const xsiz = vData[0][0].length ;
@@ -28,16 +29,16 @@ const Render = {
 		for( let xi=0;xi<xsiz;++xi ){
 		    const rgba = vData[zi][yi][xi];
 		    const vi = this.getVolIdx(xi,yi,zi);
-		    if( this.bUInt8 ){
-			this.vol[vi  ] = Math.floor(255*rgba[0]+0.5) ;
-			this.vol[vi+1] = Math.floor(255*rgba[1]+0.5) ;
-			this.vol[vi+2] = Math.floor(255*rgba[2]+0.5) ;
-			this.vol[vi+3] = Math.floor(255*rgba[3]+0.5) ;
-		    } else {
+		    if( this.bFloat ){
 			this.vol[vi  ] = rgba[0] ;
 			this.vol[vi+1] = rgba[1] ;
 			this.vol[vi+2] = rgba[2] ;
 			this.vol[vi+3] = rgba[3] ;
+		    } else {
+			this.vol[vi  ] = Math.floor(255*rgba[0]+0.5) ;
+			this.vol[vi+1] = Math.floor(255*rgba[1]+0.5) ;
+			this.vol[vi+2] = Math.floor(255*rgba[2]+0.5) ;
+			this.vol[vi+3] = Math.floor(255*rgba[3]+0.5) ;
 		    }
 		}
 	    }
@@ -48,7 +49,16 @@ const Render = {
 	test.assert( this.xsiz !== null && this.ysiz !== null && this.zsiz !== null ) ;
 	test.assert( this.tx_width !== null && this.tx_height !== null ) ;
 	// Convert texture array to texture object
-	this.texture = new THREE.DataTexture( this.vol, this.tx_width, this.tx_height, THREE.RGBAFormat );
+	this.texture = new THREE.DataTexture(
+	    this.vol, this.tx_width, this.tx_height, THREE.RGBAFormat
+	    , this.bFloat ? THREE.FloatType : THREE.UnsignedByteType // type
+	    , THREE.UVMapping // mapping
+	    , THREE.RepeatWrapping // THREE.ClampToEdgeWrapping // wrapS
+	    , THREE.RepeatWrapping // THREE.ClampToEdgeWrapping // wrapT
+	    , this.bLinear ? THREE.LinearFilter : THREE.NearestFilter // magFilter
+	    , THREE.NearestFilter // minFilter
+	    , 1 // anisotropy
+	);
 	this.texture.needsUpdate = true;
 	this.numSlices = numSlices ;
 	if( dAlphaMul == null ) dAlphaMul = 1.0;
@@ -60,6 +70,7 @@ const Render = {
 	    uniforms: {
 		"z_size": {value: this.zsiz},
 		"d_alpha": {value: dAlphaMul/this.numSlices},
+		"bLinear": {value: this.bLinear ? 1.0 : 0.0 },
 		"texture" : {type: "t" , value:this.texture }
 	    },
 	    vertexShader: $("#vertexshader")[0].textContent,
