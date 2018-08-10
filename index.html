@@ -16,6 +16,7 @@
   <script src="js/unit.js"></script>
   <script src="js/jquery-3.3.1.min.js"></script>
   <script src="js/three.min.js"></script>
+  <script src="js/TrackballControls.js"></script>
 
   <!-- load shaders and external functions -->
   <script type="x-shader/x-vertex" id="vertexshader">
@@ -24,9 +25,10 @@
     varying vec4 vColor;
 
     void main() {
-    vColor = color;
-    gl_PointSize = 1.5;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      vColor = color;
+      gl_PointSize = 1.5;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      //gl_Position = projectionMatrix * vec4( position, 1.0 );
     }
   </script>
   <script type="x-shader/x-fragment" id="fragmentshader">
@@ -36,8 +38,7 @@
 
     void main() {
       float t = time * 0.001;
-      //gl_FragColor = vec4( vColor.r * abs(sin(t)), vColor.g * abs(cos(t)), vColor.b * abs(sin(t)), 1.0 );
-      gl_FragColor = vec4( 0,0,1 , 1.0 );
+      gl_FragColor = vec4( vColor.r * abs(sin(t)), vColor.g * abs(cos(t)), vColor.b * abs(sin(t)), 1.0 );
     }
   </script>
   <script src="js/render.js"></script>
