@@ -1,7 +1,9 @@
-function genShaderMaterial(){
+function genShaderMaterial(texture , z_size , numSlices){
     var ParamsShaderMaterial = {
 	uniforms: {
-	    "time": {value: 1.0}
+	    "z_size": {value: z_size},
+	    "d_alpha": {value: 1.0/numSlices},
+	    "texture" : {type: "t" , value:texture }
 	},
 	vertexShader: $("#vertexshader")[0].textContent,
 	fragmentShader:  $("#fragmentshader")[0].textContent,

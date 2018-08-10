@@ -32,9 +32,18 @@
   <script type="x-shader/x-fragment" id="fragmentshader">
     precision mediump float;
     varying vec3 vPosition;
+    uniform float z_size;
+    uniform float d_alpha;
+    uniform sampler2D texture;
 
     void main() {
-      gl_FragColor = vec4( vPosition.x+0.5,vPosition.y+0.5,vPosition.z+0.5, 1.0 );
+      vec4 vpos = vec4( vPosition.x+0.5,vPosition.y+0.5,vPosition.z+0.5, 1.0 );
+      gl_FragColor = vpos;
+
+      float iz = floor( vpos.z * z_size + 0.5) ;
+      float tx = (iz + vpos.x) / z_size ;
+      gl_FragColor = texture2D( texture, vec2(tx,vpos.y) );
+      gl_FragColor.w = d_alpha * gl_FragColor.w ;
     }
   </script>
   <script src="js/render.js"></script>
