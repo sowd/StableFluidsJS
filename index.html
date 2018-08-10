@@ -13,7 +13,7 @@
 </head>
 <body>
   <!-- Unit test library from http://unitjs.com/guide/introduction.html -->
-  <script src="js/unit.js"></script>
+  <script src="js/unit.js"></script> <script>const test = unitjs;</script>
   <script src="js/jquery-3.3.1.min.js"></script>
   <script src="js/three.min.js"></script>
   <script src="js/TrackballControls.js"></script>
@@ -43,12 +43,14 @@
       float iz = floor( vpos.z * z_size + 0.5) ;
       float tx = (iz + vpos.x) / z_size ;
       gl_FragColor = texture2D( texture, vec2(tx,vpos.y) );
+      //gl_FragColor.w = gl_FragColor.w <0.5 ? 0.0 : 1.0;
       gl_FragColor.w = d_alpha * gl_FragColor.w ;
     }
   </script>
   <script src="js/render.js"></script>
   <script src="js/fluid.js"></script>
 
+  <script src="js/perlin.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
