@@ -2,8 +2,11 @@
 
 //const xsiz = 8, ysiz = 8, zsiz = 8 ;
 const xsiz = 128, ysiz = 128, zsiz = 128 ;
-const bFloatVoxel = true ; // if false, voxel is stored as uint8
+const bFloatVoxel = false ; // if false, voxel is stored as uint8
 const bLinearTextureInterpolation = true ; // if false, texture is nearest neighbor
+
+// This shows a bug that volume is not rendered from some angle
+const bDbgShowRenderedAxis = false ;
 
 const numZPlanes = 128 ; // Number of planes to slice volume
 const voxelBrightness = 30.0 ;
@@ -33,9 +36,34 @@ onload = function(){
     ctrl.addEventListener('change',()=>{renderer.render( scene, camera );});
 
     // Rendering loop
+    let dbgRenderedAxisStr = '';
+
     function animate() {
 	requestAnimationFrame( animate );
 	ctrl.update();
+
+	// Check proper rendering order
+	const m = camera.matrixWorldInverse ;
+	//const m = camera.projectionMatrix;
+	const vvec = [
+		m.elements[8],m.elements[9],m.elements[10]
+	] ;
+	const vvec_abs = [ Math.abs(vvec[0]), Math.abs(vvec[1]), Math.abs(vvec[2]) ] ;
+	const axis = ( vvec_abs[0] > vvec_abs[1]
+		     ? (vvec_abs[0] > vvec_abs[2] ? 0:2) 
+		     : (vvec_abs[1] > vvec_abs[2] ? 1:2) ) ;
+
+	const order = (vvec[axis]>0?1:0) ;
+
+	Render.setScene(axis,order);
+
+	if( bDbgShowRenderedAxis ){
+	    const _dbgRenderedAxisStr = (order>0?'':'-') + (axis==0?'X':(axis==1?'Y':'Z')) ;
+	    if( dbgRenderedAxisStr != _dbgRenderedAxisStr ){
+		console.log(_dbgRenderedAxisStr);
+		dbgRenderedAxisStr = _dbgRenderedAxisStr ;
+	    }
+	}
     }
     animate();
 
@@ -57,7 +85,8 @@ onload = function(){
     Render.allocate(xsiz,ysiz,zsiz
 		    , bFloatVoxel , bLinearTextureInterpolation );
     Render.set4DFloatVoxelArray(srcVoxel);
-    Render.setScene( scene , numZPlanes , voxelBrightness );
+    Render.setMeshes( scene , numZPlanes , voxelBrightness );
+    Render.setScene( 2,1 );
 
     // Render first frame
     renderer.render( scene, camera );
