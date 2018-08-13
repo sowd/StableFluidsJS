@@ -1,7 +1,15 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
-//const xsiz = 8, ysiz = 8, zsiz = 8 ;
 const xsiz = 128, ysiz = 128, zsiz = 128 ;
+
+// Voxel properties
+const numVxlProperties = 10;
+const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
+const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
+const Temp1 = 8 , Temp2 = 9;
+
+
+
 const bFloatVoxel = false ; // if false, voxel is stored as uint8
 const bLinearTextureInterpolation = true ; // if false, texture is nearest neighbor
 
@@ -42,7 +50,7 @@ onload = function(){
 	requestAnimationFrame( animate );
 	ctrl.update();
 
-	// Check proper rendering order
+	// Check proper rendering order (buggy)
 	const m = camera.matrixWorldInverse ;
 	//const m = camera.projectionMatrix;
 	const vvec = [
@@ -69,12 +77,13 @@ onload = function(){
 
     // Define volume
     let srcVoxel = [];
-    for( let zi=0;zi<zsiz;++zi ){
+    for( let zi=0;zi<zsiz+2;++zi ){
 	srcVoxel.push([]);
-	for( let yi=0;yi<ysiz;++yi ){
+	for( let yi=0;yi<ysiz+2;++yi ){
 	    srcVoxel[zi].push([]);
-	    for( let xi=0;xi<xsiz;++xi ){
-		srcVoxel[zi][yi].push( [1,1,1,1] );
+	    for( let xi=0;xi<xsiz+2;++xi ){
+		// FlowX, FlowY, FlowZ, Density, Tmp
+		srcVoxel[zi][yi].push( new Array(numVxlProperties) );
 	    }
 	}
     }
@@ -93,15 +102,15 @@ onload = function(){
 };
 
 function setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz){
-    for( let rgba=0;rgba<4;++rgba ){
+    for( let vpi=0 ; vpi<numVxlProperties ; ++vpi ){
 	noise.seed(Math.random());
-	for( let zi=0;zi<zsiz;++zi ){
-	    let _z = 2.0*zi/(zsiz-1) - 1 ; // -1 to 1
-	    for( let yi=0;yi<ysiz;++yi ){
-		let _y = 2.0*yi/(ysiz-1) - 1 ;
-		for( let xi=0;xi<xsiz;++xi ){
-		    let _x = 2.0*xi/(xsiz-1) - 1 ;
-		    srcVoxel[zi][yi][xi][rgba] = Math.abs( noise.perlin3(_x,_y,_z) ) ;
+	for( let zi=1;zi<=zsiz;++zi ){
+	    let _z = 2.0*(zi-1)/(zsiz-1) - 1 ; // -1 to 1
+	    for( let yi=1;yi<=ysiz;++yi ){
+		let _y = 2.0*(yi-1)/(ysiz-1) - 1 ;
+		for( let xi=1;xi<=xsiz;++xi ){
+		    let _x = 2.0*(xi-1)/(xsiz-1) - 1 ;
+		    srcVoxel[zi][yi][xi][vpi] = Math.abs( noise.perlin3(_x,_y,_z) ) ;
 		}
 	    }
 	}

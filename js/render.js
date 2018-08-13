@@ -6,52 +6,52 @@ const Render = {
 	this.xsiz = xsiz ; this.ysiz = ysiz ; this.zsiz = zsiz ;
 	this.tx_width = xsiz * zsiz , this.tx_height = ysiz ;
 
-	this.getVolIdx = function(ix,iy,iz){
-	    return 4*( (iz*xsiz + ix)  + iy*(xsiz*zsiz) ) ;
-	} ;
-	this.vol = (this.bFloat
+	this.txVol = (this.bFloat
 		    ? new Float32Array( 4 * this.tx_width * this.tx_height )
 		    : new Uint8Array( 4 * this.tx_width * this.tx_height ) );
     }
-    ,set4DFloatVoxelArray : function( vData /*[iz][iy][ix]*/ ){
-	const xsiz = vData[0][0].length ;
-	const ysiz = vData[0].length ;
-	const zsiz = vData.length ;
+    ,set4DFloatVoxelArray : function( srcVolArray /*[iz][iy][ix]=[FlowX,FlowY,FlowZ,Density]*/ ){
+	const xsiz = srcVolArray[0][0].length-2 ;
+	const ysiz = srcVolArray[0].length-2 ;
+	const zsiz = srcVolArray.length-2 ;
 
 	test.assert( xsiz == this.xsiz );
 	test.assert( ysiz == this.ysiz );
 	test.assert( zsiz == this.zsiz );
-	test.assert( this.vol != null );
+	test.assert( this.txVol != null );
 
-	// Copy txData to this.vol
-	for( let zi=0;zi<zsiz;++zi ){
-	    for( let yi=0;yi<ysiz;++yi ){
-		for( let xi=0;xi<xsiz;++xi ){
-		    const rgba = vData[zi][yi][xi];
-		    const vi = this.getVolIdx(xi,yi,zi);
+	function getVoxelIdx(ix,iy,iz){
+	    return 4*( (iz*xsiz + ix)  + iy*(xsiz*zsiz) ) ;
+	} ;
+	// Copy txData to this.txVol
+	for( let zi=1;zi<=zsiz;++zi ){
+	    for( let yi=1;yi<=ysiz;++yi ){
+		for( let xi=1;xi<=xsiz;++xi ){
+		    const voxel = srcVolArray[zi][yi][xi];
+		    const vi = getVoxelIdx(xi-1,yi-1,zi-1);
 		    if( this.bFloat ){
-			this.vol[vi  ] = rgba[0] ;
-			this.vol[vi+1] = rgba[1] ;
-			this.vol[vi+2] = rgba[2] ;
-			this.vol[vi+3] = rgba[3] ;
+			this.txVol[vi  ] = voxel[0] ;
+			this.txVol[vi+1] = voxel[1] ;
+			this.txVol[vi+2] = voxel[2] ;
+			this.txVol[vi+3] = voxel[3] ;
 		    } else {
-			this.vol[vi  ] = Math.floor(255*rgba[0]+0.5) ;
-			this.vol[vi+1] = Math.floor(255*rgba[1]+0.5) ;
-			this.vol[vi+2] = Math.floor(255*rgba[2]+0.5) ;
-			this.vol[vi+3] = Math.floor(255*rgba[3]+0.5) ;
+			this.txVol[vi  ] = Math.floor(255*voxel[0]+0.5) ;
+			this.txVol[vi+1] = Math.floor(255*voxel[1]+0.5) ;
+			this.txVol[vi+2] = Math.floor(255*voxel[2]+0.5) ;
+			this.txVol[vi+3] = Math.floor(255*voxel[3]+0.5) ;
 		    }
 		}
 	    }
 	}
     }
     ,setMeshes : function(scene , numSlices  /*render plane number*/ , dAlphaMul){
-	test.assert( this.vol !== null ) ;
+	test.assert( this.txVol !== null ) ;
 	test.assert( this.xsiz !== null && this.ysiz !== null && this.zsiz !== null ) ;
 	test.assert( this.tx_width !== null && this.tx_height !== null ) ;
 	this.scene = scene ;
 	// Convert texture array to texture object
 	this.texture = new THREE.DataTexture(
-	    this.vol, this.tx_width, this.tx_height, THREE.RGBAFormat
+	    this.txVol, this.tx_width, this.tx_height, THREE.RGBAFormat
 	    , this.bFloat ? THREE.FloatType : THREE.UnsignedByteType // type
 	    , THREE.UVMapping // mapping
 	    , THREE.RepeatWrapping // THREE.ClampToEdgeWrapping // wrapS
