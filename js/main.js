@@ -1,12 +1,15 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
-const xsiz = 128, ysiz = 128, zsiz = 128 ;
+const xsiz = 8, ysiz = 8, zsiz = 8 ;
+//const xsiz = 128, ysiz = 128, zsiz = 128 ;
 
 // Voxel properties
 const numVxlProperties = 10;
 const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
 const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
 const Temp1 = 8 , Temp2 = 9;
+
+const dt = 0.1 ;
 
 
 
@@ -43,10 +46,38 @@ onload = function(){
     const ctrl = new THREE.TrackballControls( camera );
     ctrl.addEventListener('change',()=>{renderer.render( scene, camera );});
 
+    // Define volume
+    let srcVoxel = [];
+    for( let zi=0;zi<zsiz+2;++zi ){
+	srcVoxel.push([]);
+	for( let yi=0;yi<ysiz+2;++yi ){
+	    srcVoxel[zi].push([]);
+	    for( let xi=0;xi<xsiz+2;++xi ){
+		// FlowX, FlowY, FlowZ, Density, Tmp
+		srcVoxel[zi][yi].push( new Array(numVxlProperties) );
+	    }
+	}
+    }
+
+    setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz)
+
+
+    Render.allocate(xsiz,ysiz,zsiz
+		    , bFloatVoxel , bLinearTextureInterpolation );
+    Render.set4DFloatVoxelArray(srcVoxel);
+    Render.setMeshes( scene , numZPlanes , voxelBrightness );
+    Render.setScene( 2,1 );
+
+    StableFluid.connect(srcVoxel);
+    
     // Rendering loop
     let dbgRenderedAxisStr = '';
 
     function animate() {
+	// Update simulation
+	StableFluid.step(dt);
+
+
 	requestAnimationFrame( animate );
 	ctrl.update();
 
@@ -74,28 +105,6 @@ onload = function(){
 	}
     }
     animate();
-
-    // Define volume
-    let srcVoxel = [];
-    for( let zi=0;zi<zsiz+2;++zi ){
-	srcVoxel.push([]);
-	for( let yi=0;yi<ysiz+2;++yi ){
-	    srcVoxel[zi].push([]);
-	    for( let xi=0;xi<xsiz+2;++xi ){
-		// FlowX, FlowY, FlowZ, Density, Tmp
-		srcVoxel[zi][yi].push( new Array(numVxlProperties) );
-	    }
-	}
-    }
-
-    setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz)
-
-
-    Render.allocate(xsiz,ysiz,zsiz
-		    , bFloatVoxel , bLinearTextureInterpolation );
-    Render.set4DFloatVoxelArray(srcVoxel);
-    Render.setMeshes( scene , numZPlanes , voxelBrightness );
-    Render.setScene( 2,1 );
 
     // Render first frame
     renderer.render( scene, camera );

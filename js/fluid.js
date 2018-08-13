@@ -212,24 +212,30 @@ const StableFluid = {
         this.vol = vol ;
     }
     ,step : function( dt ){
-        const volPrev = JSON.parse( JSON.stringify(this.vol) ) ;
 	const diff = 1 , b = 0 ;
 
 	let vol = this.vol ;
+        let volPrev = JSON.parse( JSON.stringify(this.vol) ) ;
+
+	function swapVol(){
+	    let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ;
+	}
 
 	// Velocity step
         addSource( dt, vol, SourceFlowX, FlowX);
         addSource( dt, vol, SourceFlowY, FlowY);
         addSource( dt, vol, SourceFlowZ, FlowZ);
 
-	let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ; // Swap
+	swapVol();
+
         diffuse( dt, vol, volPrev, FlowX, diff, 0 );
         diffuse( dt, vol, volPrev, FlowY, diff, 0 );
         diffuse( dt, vol, volPrev, FlowZ, diff, 0 );
 
 	project( vol );
 
-	tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ; // Swap
+	swapVol();
+
 	advect( dt, vol, volPrev, FlowX, 1 );
 	advect( dt, vol, volPrev, FlowY, 2 );
 	advect( dt, vol, volPrev, FlowZ, 3 );
@@ -239,9 +245,9 @@ const StableFluid = {
 
         // Density step
         addSource( dt, vol, SourceDensity, Density);
-	let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ; // Swap
+	swapVol();
         diffuse( dt, vol, volPrev, Density, diff, 0 );
-	tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ; // Swap
+	swapVol();
 	advect( dt, vol, volPrev, Density, 0 );
 
 
