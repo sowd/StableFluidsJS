@@ -1,16 +1,14 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
-//const xsiz = 8, ysiz = 8, zsiz = 8 ;
-const xsiz = 16, ysiz = 16, zsiz = 16 ;
-//const xsiz = 32, ysiz = 32, zsiz = 32 ;
-//const xsiz = 128, ysiz = 128, zsiz = 128 ;
+const siz = 16 ; // Should be power of two
+const xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
 
 const dt = 0.1 ;
 const bSourceExistsOnlyFirstFrame = false ;
 const sourceDensityForDemo = 100 ;
-const flowYForDemo = 10000 ;
+const flowYForDemo = 1000 ;
 
-const diffuseConst = 0.01 ; // Diffuse
+const diffuseConst = 0.001 ; // Diffuse
 
 const bFloatVoxel = false ; // if false, voxel is stored as uint8
 const bLinearTextureInterpolation = true ; // if false, texture is nearest neighbor

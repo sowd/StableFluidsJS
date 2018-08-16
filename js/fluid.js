@@ -1,5 +1,5 @@
 // Implements Stam's Stable Fluid
-
+// https://pdfs.semanticscholar.org/847f/819a4ea14bd789aca8bc88e85e906cfc657c.pdf
 
 // Add source information (in 'SourceDensity' element of each voxel)
 // to the Density of the volume.
@@ -17,7 +17,7 @@ function addSource(dt,vol, srcPropId, tgtPropId){
 
 function diffuse( dt, vol, prevVol, propId, diff, b ){
     const N = vol.length-2;
-    const a = dt * diff * N * N * N;
+    const a = dt * diff * N * N * N ;
 
     for( let k=0 ; k<20 ; ++k ){
         for( let iz=1 ; iz<=N ; ++iz){

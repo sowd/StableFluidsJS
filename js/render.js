@@ -4,7 +4,7 @@ const Render = {
 	this.bLinear = (bLinear !== false) ;
 
 	this.xsiz = xsiz ; this.ysiz = ysiz ; this.zsiz = zsiz ;
-	this.tx_width = xsiz * zsiz , this.tx_height = ysiz ;
+	this.tx_width = (xsiz+2) * (zsiz+2) , this.tx_height = (ysiz+2) ;
 
 	this.txVol = (this.bFloat
 		    ? new Float32Array( 4 * this.tx_width * this.tx_height )
@@ -21,14 +21,15 @@ const Render = {
 	test.assert( this.txVol != null );
 
 	function getVoxelIdx(ix,iy,iz){
-	    return 4*( (iz*xsiz + ix)  + iy*(xsiz*zsiz) ) ;
+	    return 4*( (iz*(xsiz+2) + ix)  + iy*((xsiz+2)*(zsiz+2)) ) ;
 	} ;
 	// Copy txData to this.txVol
 	for( let zi=1;zi<=zsiz;++zi ){
 	    for( let yi=1;yi<=ysiz;++yi ){
 		for( let xi=1;xi<=xsiz;++xi ){
 		    const voxel = srcVolArray[zi][yi][xi];
-		    const vi = getVoxelIdx(xi-1,yi-1,zi-1);
+		    const vi = getVoxelIdx(xi,yi,zi);
+		    //const vi = getVoxelIdx(xi-1,yi-1,zi-1);
 		    if( this.bFloat ){
 			this.txVol[vi  ] = voxel[0] ;
 			this.txVol[vi+1] = voxel[1] ;
@@ -69,7 +70,7 @@ const Render = {
 	// Vertex/fragment shaders defined in index.html
 	const ParamsShaderMaterial = {
 	    uniforms: {
-		"z_size": {value: this.zsiz},
+		"z_size": {value: this.zsiz+2},
 		"d_alpha": {value: dAlphaMul/this.numSlices},
 		"bLinear": {value: this.bLinear ? 1.0 : 0.0 },
 		"texture" : {type: "t" , value:this.texture }
