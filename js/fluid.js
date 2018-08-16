@@ -5,9 +5,9 @@
 // to the Density of the volume.
 function addSource(dt,vol, srcPropId, tgtPropId){
     const N = vol.length-2;
-    for( let iz=1 ; iz<=N ; ++iz){
-        for( let iy=1 ; iy<=N ; ++iy ){
-            for( let ix=1 ; ix<=N ; ++ix ){
+    for( let iz=0 ; iz<N+2 ; ++iz){
+        for( let iy=0 ; iy<N+2 ; ++iy ){
+            for( let ix=0 ; ix<N+2 ; ++ix ){
                 let vxl = vol[iz][iy][ix];
                 vxl[tgtPropId] += dt * vxl[srcPropId] ;
             }
@@ -17,7 +17,7 @@ function addSource(dt,vol, srcPropId, tgtPropId){
 
 function diffuse( dt, vol, prevVol, propId, diff, b ){
     const N = vol.length-2;
-    const a = dt * diff * N * N * N ;
+    const a = dt * diff * N * N * N;
 
     for( let k=0 ; k<20 ; ++k ){
         for( let iz=1 ; iz<=N ; ++iz){
@@ -39,11 +39,11 @@ function diffuse( dt, vol, prevVol, propId, diff, b ){
         }
 
         // Copy back temp value to current density
-        for( let iz=0 ; iz<N ; ++iz){
-            for( let iy=0 ; iy<N ; ++iy ){
-                for( let ix=0 ; ix<N ; ++ix ){
+        for( let iz=1 ; iz<=N ; ++iz){
+            for( let iy=1 ; iy<=N ; ++iy ){
+                for( let ix=1 ; ix<=N ; ++ix ){
                     let voxel = vol[iz][iy][ix];
-                    voxel[propId] += voxel[Temp1] ;
+                    voxel[propId] = voxel[Temp1] ;
                 }
             }
         }
@@ -211,11 +211,20 @@ const StableFluid = {
         }
         this.vol = vol ;
     }
-    ,step : function( dt ){
-	const diff = 1 , b = 0 ;
+    ,step : function( dt , _diffuse ){
+	const diff = _diffuse||1 , b = 0 ;
 
 	let vol = this.vol ;
         let volPrev = JSON.parse( JSON.stringify(this.vol) ) ;
+	/* Zero clear volPrev
+	volPrev.forEach(zv=>{
+	    zv.forEach(yv=>{
+		yv.forEach(xv=>{
+		    for( let i=0;i<xv.length;++i )
+			xv[i]=0;
+		})
+	    })
+	});*/
 
 	function swapVol(){
 	    let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ;

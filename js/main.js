@@ -1,17 +1,16 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
-const xsiz = 8, ysiz = 8, zsiz = 8 ;
+//const xsiz = 8, ysiz = 8, zsiz = 8 ;
+const xsiz = 16, ysiz = 16, zsiz = 16 ;
+//const xsiz = 32, ysiz = 32, zsiz = 32 ;
 //const xsiz = 128, ysiz = 128, zsiz = 128 ;
 
-// Voxel properties
-const numVxlProperties = 10;
-const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
-const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
-const Temp1 = 8 , Temp2 = 9;
-
 const dt = 0.1 ;
+const bSourceExistsOnlyFirstFrame = false ;
+const sourceDensityForDemo = 100 ;
+const flowYForDemo = 10000 ;
 
-
+const diffuseConst = 0.01 ; // Diffuse
 
 const bFloatVoxel = false ; // if false, voxel is stored as uint8
 const bLinearTextureInterpolation = true ; // if false, texture is nearest neighbor
@@ -21,6 +20,16 @@ const bDbgShowRenderedAxis = false ;
 
 const numZPlanes = 128 ; // Number of planes to slice volume
 const voxelBrightness = 30.0 ;
+
+
+// Voxel properties
+const numVxlProperties = 10;
+const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
+const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
+const Temp1 = 8 , Temp2 = 9;
+
+
+
 
 onload = function(){
     // Start creation of the whole scene
@@ -48,18 +57,21 @@ onload = function(){
 
     // Define volume
     let srcVoxel = [];
+    let zeroVoxel = [];
+    for( let zvi=0;zvi<numVxlProperties;++zvi ) zeroVoxel.push(0);
     for( let zi=0;zi<zsiz+2;++zi ){
 	srcVoxel.push([]);
 	for( let yi=0;yi<ysiz+2;++yi ){
 	    srcVoxel[zi].push([]);
 	    for( let xi=0;xi<xsiz+2;++xi ){
 		// FlowX, FlowY, FlowZ, Density, Tmp
-		srcVoxel[zi][yi].push( new Array(numVxlProperties) );
+		srcVoxel[zi][yi].push( Array.from(zeroVoxel) );
 	    }
 	}
     }
 
-    setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz)
+    setSquareSourceDemo(srcVoxel)
+    //setPerlinNoise(srcVoxel)
 
 
     Render.allocate(xsiz,ysiz,zsiz
@@ -75,8 +87,13 @@ onload = function(){
 
     function animate() {
 	// Update simulation
-	StableFluid.step(dt);
+	StableFluid.step(dt,diffuseConst);
+	Render.set4DFloatVoxelArray(StableFluid.vol);
+	Render.updateTextureByStoredTxVol();
 
+	if( bSourceExistsOnlyFirstFrame )
+	    // Source exists only at the first frame
+	    resetSource(srcVoxel);
 
 	requestAnimationFrame( animate );
 	ctrl.update();
@@ -95,6 +112,7 @@ onload = function(){
 	const order = (vvec[axis]>0?1:0) ;
 
 	Render.setScene(axis,order);
+	renderer.render( scene, camera );
 
 	if( bDbgShowRenderedAxis ){
 	    const _dbgRenderedAxisStr = (order>0?'':'-') + (axis==0?'X':(axis==1?'Y':'Z')) ;
@@ -110,7 +128,43 @@ onload = function(){
     renderer.render( scene, camera );
 };
 
-function setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz){
+function setSquareSourceDemo(srcVoxel){
+    const xsiz = srcVoxel[0][0].length-2 ;
+    const ysiz = srcVoxel[0].length-2 ;
+    const zsiz = srcVoxel.length-2 ;
+
+    const c = Math.floor(xsiz/2.0)+1;  // Center
+    const r = Math.floor(xsiz/10.0);   // Source area r/2
+    for( let iz = c-r ; iz <= c+r ; ++iz ){
+	for( let ix = c-r ; ix <= c+r ; ++ix ){
+	    srcVoxel[iz][1][ix][SourceDensity] = sourceDensityForDemo ;
+	    srcVoxel[iz][1][ix][FlowY] = flowYForDemo ;
+	}
+    }
+}
+function resetSource(srcVoxel){
+    const xsiz = srcVoxel[0][0].length-2 ;
+    const ysiz = srcVoxel[0].length-2 ;
+    const zsiz = srcVoxel.length-2 ;
+    for( let zi=1;zi<=zsiz;++zi ){
+	for( let yi=1;yi<=ysiz;++yi ){
+	    for( let xi=1;xi<=xsiz;++xi ){
+		const vxl = srcVoxel[zi][yi][xi];
+		vxl[SourceFlowX]
+		    = vxl[SourceFlowY]
+		    = vxl[SourceFlowZ]
+		    = vxl[SourceDensity]
+		    = 0;
+	    }
+	}
+    }
+}
+
+// Only for debug purpose (not used anymore
+function setPerlinNoise(srcVoxel){
+    const xsiz = srcVoxel[0][0].length-2 ;
+    const ysiz = srcVoxel[0].length-2 ;
+    const zsiz = srcVoxel.length-2 ;
     for( let vpi=0 ; vpi<numVxlProperties ; ++vpi ){
 	noise.seed(Math.random());
 	for( let zi=1;zi<=zsiz;++zi ){
@@ -125,3 +179,4 @@ function setPerlinNoise(srcVoxel,xsiz,ysiz,zsiz){
 	}
     }
 }
+

@@ -50,11 +50,18 @@
       // Linear interpolation or nearest neighbor
       dz = mix( 0.0 , dz , bLinear ) ;
 
+      float density = 
+            (1.0-dz) * texture2D( texture, vec2(tx_1,vpos.y) ).w
+            +    dz  * texture2D( texture, vec2(tx_2,vpos.y) ).w ;
+    
+      gl_FragColor = vec4(1,1,1,d_alpha * density);
+/*
       gl_FragColor =
             (1.0-dz) * texture2D( texture, vec2(tx_1,vpos.y) )
             +    dz  * texture2D( texture, vec2(tx_2,vpos.y) ) ;
 
-      gl_FragColor.w = d_alpha * gl_FragColor.w ;
+      gl_FragColor.x = gl_FragColor.y = gl_FragColor.z = 1.0;
+      gl_FragColor.w = d_alpha * gl_FragColor.w ;*/
     }
   </script>
   <script src="js/render.js"></script>

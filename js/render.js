@@ -120,6 +120,26 @@ const Render = {
 
 	this.meshes = meshes ;
     }
+    , updateTextureByStoredTxVol: function(){
+	test.assert( this.txVol !== null ) ;
+	test.assert( this.xsiz !== null && this.ysiz !== null && this.zsiz !== null ) ;
+	test.assert( this.txVol.length == 4 * this.tx_width * this.tx_height ) ;
+
+	this.texture = new THREE.DataTexture(
+	    this.txVol, this.tx_width, this.tx_height, THREE.RGBAFormat
+	    , this.bFloat ? THREE.FloatType : THREE.UnsignedByteType // type
+	    , THREE.UVMapping // mapping
+	    , THREE.RepeatWrapping // THREE.ClampToEdgeWrapping // wrapS
+	    , THREE.RepeatWrapping // THREE.ClampToEdgeWrapping // wrapT
+	    , this.bLinear ? THREE.LinearFilter : THREE.NearestFilter // magFilter
+	    , THREE.NearestFilter // minFilter
+	    , 1 // anisotropy
+	);
+	this.texture.needsUpdate = true;
+	this.material.uniforms.texture.value = this.texture ;
+	//this.material.map = this.texture ;
+	this.material.needsUpdate = true;
+    }
     , setScene: function(axis,order){
 	if( this.meshes == null )
 	    return ;
