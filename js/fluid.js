@@ -1,6 +1,13 @@
 // Implements Stam's Stable Fluid
 // https://pdfs.semanticscholar.org/847f/819a4ea14bd789aca8bc88e85e906cfc657c.pdf
 
+// Voxel properties
+const numVxlProperties = 10;
+const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
+const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
+const Temp1 = 8 , Temp2 = 9;
+
+
 // Add source information (in 'SourceDensity' element of each voxel)
 // to the Density of the volume.
 function addSource(dt,vol, srcPropId, tgtPropId){
@@ -262,5 +269,22 @@ const StableFluid = {
 
 	this.vol = vol ;
     }
+
+    // Consts for node.js
+    ,consts:{
+	numVxlProperties: numVxlProperties
+	,FlowX: FlowX
+	,FlowY: FlowY
+	,FlowZ: FlowZ
+	,Density: Density
+	,SourceFlowX: SourceFlowX
+	,SourceFlowY: SourceFlowY
+	,SourceFlowZ: SourceFlowZ
+	,SourceDensity: SourceDensity
+	,Temp1:Temp1
+	,Temp2:Temp2
+    }
+
 }
 
+exports.StableFluid = StableFluid ;

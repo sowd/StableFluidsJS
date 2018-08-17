@@ -20,14 +20,6 @@ const numZPlanes = 128 ; // Number of planes to slice volume
 const voxelBrightness = 30.0 ;
 
 
-// Voxel properties
-const numVxlProperties = 10;
-const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
-const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
-const Temp1 = 8 , Temp2 = 9;
-
-
-
 
 onload = function(){
     // Start creation of the whole scene
