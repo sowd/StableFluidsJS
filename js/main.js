@@ -1,6 +1,6 @@
 // Three.js docs: https://threejs.org/docs/index.html
 
-const siz = 16 ; // Should be power of two
+const siz = 32 ; // Should be power of two
 const xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
 
 const dt = 0.1 ;
