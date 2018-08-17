@@ -3,7 +3,7 @@ const fs = require('fs');
 
 /// File output seggings
 const OUT_FILE_NAME_PREFIX='data/vol_';
-const FRAMES = 3 ;
+const FRAMES = 100 ;
 
 const siz = 64 ; // Volume dimension (including boundary)
 const xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
@@ -105,10 +105,6 @@ for( let frameId = 0 ; frameId < FRAMES ; ++frameId ){
 	}
     }
 
-    (function(){
-	let frmId = frameId ;
-	console.log('Writing frame '+frmId+'.');
-	fs.writeFile( OUT_FILE_NAME_PREFIX+frameId+'.vol' , buf, 'binary',
-		      function(){} ) ;
-    }()) ;
+    console.log('Writing frame '+frameId+'.');
+    fs.writeFileSync(OUT_FILE_NAME_PREFIX+frameId+'.vol',buf);
 }
