@@ -112,7 +112,6 @@ const Render = {
 		    geometry.faces.push(new THREE.Face3(0, 3, 2));
 
 		    //const geometry = new THREE.PlaneGeometry( 1, 1 ); mesh.position.z = z ;
-		    //let geometry = new THREE.BoxGeometry( 1, 1, 1 );
 		    let mesh = new THREE.Mesh( geometry, this.material );
 		    meshes[axis][order].push(mesh);
 		}
@@ -120,6 +119,15 @@ const Render = {
 	}
 
 	this.meshes = meshes ;
+
+
+	// Draw boundary box
+	(function(){
+	    var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
+	    var edges = new THREE.EdgesGeometry( geometry );
+	    var line = new THREE.LineSegments( edges, new THREE.LineBasicMaterial( { color: 0x00ffff } ) );
+	    scene.add( line );
+	})();
     }
     , updateTextureByStoredTxVol: function(){
 	test.assert( this.txVol !== null ) ;

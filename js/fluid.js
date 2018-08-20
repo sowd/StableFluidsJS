@@ -2,21 +2,36 @@
 // https://pdfs.semanticscholar.org/847f/819a4ea14bd789aca8bc88e85e906cfc657c.pdf
 
 // Voxel properties
-const numVxlProperties = 10;
+const numVxlProperties = 6 , srcVolNumProperties = 4 ;
 const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
-const SourceFlowX = 4 , SourceFlowY = 5 , SourceFlowZ = 6 , SourceDensity = 7 ;
-const Temp1 = 8 , Temp2 = 9;
+const Temp1 = 4 , Temp2 = 5;
 
 
 // Add source information (in 'SourceDensity' element of each voxel)
 // to the Density of the volume.
-function addSource(dt,vol, srcPropId, tgtPropId){
+function addSource(dt, vol, prevVol, srcVol, propId){
     const N = vol.length-2;
     for( let iz=0 ; iz<N+2 ; ++iz){
         for( let iy=0 ; iy<N+2 ; ++iy ){
             for( let ix=0 ; ix<N+2 ; ++ix ){
-                let vxl = vol[iz][iy][ix];
-                vxl[tgtPropId] += dt * vxl[srcPropId] ;
+                vol[iz][iy][ix][propId] =
+		    prevVol[iz][iy][ix][propId] + dt * srcVol[iz][iy][ix][propId] ;
+            }
+        }
+    }
+}
+function copyVol( srcVol,tgtVol,propId ){
+    const N = srcVol.length-2;
+    for( let iz=0 ; iz<N+2 ; ++iz){
+        for( let iy=0 ; iy<N+2 ; ++iy ){
+            for( let ix=0 ; ix<N+2 ; ++ix ){
+		if( propId == null ){
+		    for( let pi=0;pi<tgtVol[iz][iy][ix].length;++pi ){
+			tgtVol[iz][iy][ix][pi] = srcVol[iz][iy][ix][pi] ;
+		    }
+		} else {
+                    tgtVol[iz][iy][ix][propId] = srcVol[iz][iy][ix][propId] ;
+		}
             }
         }
     }
@@ -66,22 +81,23 @@ function advect(dt, vol, volPrev, propId, b){
     for( let iz=1 ; iz<=N ; ++iz){
         for( let iy=1 ; iy<=N ; ++iy ){
             for( let ix=1 ; ix<=N ; ++ix ){
-                const voxel = vol[iz][iy][ix];
+                //const voxel = ;
+                const voxelPrev = vp[iz][iy][ix];
 
-                let x = ix - dt0*voxel[FlowX];
-                let y = iy - dt0*voxel[FlowY];
-                let z = iz - dt0*voxel[FlowZ];
+                let x = ix - dt0*voxelPrev[FlowX];
+                let y = iy - dt0*voxelPrev[FlowY];
+                let z = iz - dt0*voxelPrev[FlowZ];
                 if( x < 0.5 ) x = 0.5 ; if( x > N+0.5) x = N+0.5 ;
                 if( y < 0.5 ) y = 0.5 ; if( y > N+0.5) y = N+0.5 ;
                 if( z < 0.5 ) z = 0.5 ; if( z > N+0.5) z = N+0.5 ;
 		const x0 = Math.floor(x), y0 = Math.floor(y), z0 = Math.floor(z);
-                const px = x-x0, py = y-y0, pz = z-z0 ;
+		const px = x-x0, py = y-y0, pz = z-z0 ;
 
-		voxel[propId] =
-		    (1-pz)*((1-py)*((1-px)*vp[iz  ][iy  ][ix][propId] + px*vp[iz  ][iy  ][ix+1][propId])
-			    +  py *((1-px)*vp[iz  ][iy+1][ix][propId] + px*vp[iz  ][iy+1][ix+1][propId]))
-		    +  pz *((1-py)*((1-px)*vp[iz+1][iy  ][ix][propId] + px*vp[iz+1][iy  ][ix+1][propId])
-			    +  py *((1-px)*vp[iz+1][iy+1][ix][propId] + px*vp[iz+1][iy+1][ix+1][propId])) ;
+		vol[iz][iy][ix][propId] =
+		    (1-pz)*((1-py)*((1-px)*vp[z0  ][y0  ][x0][propId] + px*vp[z0  ][y0  ][x0+1][propId])
+			    +  py *((1-px)*vp[z0  ][y0+1][x0][propId] + px*vp[z0  ][y0+1][x0+1][propId]))
+		    +  pz *((1-py)*((1-px)*vp[z0+1][y0  ][x0][propId] + px*vp[z0+1][y0  ][x0+1][propId])
+    			    +  py *((1-px)*vp[z0+1][y0+1][x0][propId] + px*vp[z0+1][y0+1][x0+1][propId])) ;
             }
         }
     }
@@ -115,14 +131,14 @@ function project(vol){
             for( let iy=1 ; iy<=N ; ++iy ){
 		for( let ix=1 ; ix<=N ; ++ix ){
                     vol[iz][iy][ix][P] =
-			(vol[iz][iy][ix][Div]
-			+vol[iz][iy][ix-1][P]+vol[iz][iy][ix+1][P]
-			+vol[iz][iy-1][ix][P]+vol[iz][iy+1][ix][P]
-			 +vol[iz-1][iy][ix][P]+vol[iz+1][iy][ix][P]) / 6 ;
-		}
+			            (vol[iz][iy][ix][Div]
+			            +vol[iz][iy][ix-1][P]+vol[iz][iy][ix+1][P]
+			            +vol[iz][iy-1][ix][P]+vol[iz][iy+1][ix][P]
+			            +vol[iz-1][iy][ix][P]+vol[iz+1][iy][ix][P]) / 6 ;
+		        }
+	        }
 	    }
-	}
-	setBnd ( vol, P, 0 );
+	    setBnd ( vol, P, 0 );
     }
     for( let iz=1 ; iz<=N ; ++iz){
         for( let iy=1 ; iy<=N ; ++iy ){
@@ -208,6 +224,39 @@ function getDim(vol){
 	? -1 : vol.length ;
 }
 
+function allocateZeroVolume(_siz, dim){
+    let siz = _siz ;
+    dim = ( dim != null ? dim : numVxlProperties ) ;
+    console.log('Volume dim: '+JSON.stringify([siz,siz,siz]));
+    let xsiz , ysiz , zsiz ;
+    xsiz = ysiz = zsiz = siz-2;
+    let srcVolume = [];
+    let zeroVoxel = [];
+    for( let zvi=0;zvi<dim;++zvi ) zeroVoxel.push(0);
+    for( let zi=0;zi<zsiz+2;++zi ){
+	srcVolume.push([]);
+	for( let yi=0;yi<ysiz+2;++yi ){
+	    srcVolume[zi].push([]);
+	    for( let xi=0;xi<xsiz+2;++xi ){
+		// FlowX, FlowY, FlowZ, Density, Tmp
+		srcVolume[zi][yi].push( Array.from(zeroVoxel) );
+	    }
+	}
+    }
+    return srcVolume ;
+}
+
+function volumeZeroFill(vol){
+    vol.forEach(zvol=>{
+	zvol.forEach(yvol=>{
+	    yvol.forEach(xvol=>{
+		xvol.filter
+	    });
+	})
+    });
+}
+
+
 const StableFluid = {
     // vol : [iz][iy][ix] (should be regular cube and one-layer buffer voxel
     //       is necessary around all faces
@@ -216,73 +265,76 @@ const StableFluid = {
             alert('Invalid voxel data is specified for StabeFluid:connect()');
             return;
         }
-        this.vol = vol ;
+        this.vol = vol;
+	this._tmpVol = allocateZeroVolume(vol.length) ;
     }
-    ,step : function( dt , _diffuse ){
-	const diff = _diffuse||1 , b = 0 ;
 
-	let vol = this.vol ;
-        let volPrev = JSON.parse( JSON.stringify(this.vol) ) ;
-	/* Zero clear volPrev
-	volPrev.forEach(zv=>{
-	    zv.forEach(yv=>{
-		yv.forEach(xv=>{
-		    for( let i=0;i<xv.length;++i )
-			xv[i]=0;
-		})
-	    })
-	});*/
+        
+    ,step : function( dt , _diffuse , _viscosity , srcVol){
+        const diff = (_diffuse != null ? _diffuse : 1) ;
+	const viscosity = (_viscosity != null ? _viscosity : 1 );
+    
+        let vol = this._tmpVol ;
+        let volPrev = this.vol ;
 
-	function swapVol(){
-	    let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ;
+        function swapVol(){
+            let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ;
+        }
+
+        // Velocity step
+	if( srcVol != null ){
+            addSource( dt, vol, volPrev, srcVol, FlowX);
+            addSource( dt, vol, volPrev, srcVol, FlowY);
+            addSource( dt, vol, volPrev, srcVol, FlowZ);
+            swapVol();
+	} else {
+	    copyVol(vol,volPrev, FlowX);
+	    copyVol(vol,volPrev, FlowY);
+	    copyVol(vol,volPrev, FlowZ);
 	}
 
-	// Velocity step
-        addSource( dt, vol, SourceFlowX, FlowX);
-        addSource( dt, vol, SourceFlowY, FlowY);
-        addSource( dt, vol, SourceFlowZ, FlowZ);
+        diffuse( dt, vol, volPrev, FlowX, viscosity, 1 );
+        diffuse( dt, vol, volPrev, FlowY, viscosity, 2 );
+        diffuse( dt, vol, volPrev, FlowZ, viscosity, 3 );
 
-	swapVol();
+        project( vol );
 
-        diffuse( dt, vol, volPrev, FlowX, diff, 0 );
-        diffuse( dt, vol, volPrev, FlowY, diff, 0 );
-        diffuse( dt, vol, volPrev, FlowZ, diff, 0 );
+        swapVol();
 
-	project( vol );
-
-	swapVol();
-
-	advect( dt, vol, volPrev, FlowX, 1 );
-	advect( dt, vol, volPrev, FlowY, 2 );
-	advect( dt, vol, volPrev, FlowZ, 3 );
-
-	project( vol );
-
+        advect( dt, vol, volPrev, FlowX, 1 );
+        advect( dt, vol, volPrev, FlowY, 2 );
+        advect( dt, vol, volPrev, FlowZ, 3 );
+        
+        project( vol );
+        swapVol();
 
         // Density step
-        addSource( dt, vol, SourceDensity, Density);
-	swapVol();
+	if( srcVol != null ){
+            addSource( dt, vol, volPrev, srcVol, Density);
+            swapVol();
+	}
+
         diffuse( dt, vol, volPrev, Density, diff, 0 );
-	swapVol();
-	advect( dt, vol, volPrev, Density, 0 );
-
-
-	this.vol = vol ;
+        swapVol();
+        advect( dt, vol, volPrev, Density, 0 );
+        
+        
+        this.vol = vol ;
+	this._tmpVol = volPrev;
     }
+
+    ,allocateZeroVolume : allocateZeroVolume
 
     // Consts for node.js
     ,consts:{
-	numVxlProperties: numVxlProperties
-	,FlowX: FlowX
-	,FlowY: FlowY
-	,FlowZ: FlowZ
-	,Density: Density
-	,SourceFlowX: SourceFlowX
-	,SourceFlowY: SourceFlowY
-	,SourceFlowZ: SourceFlowZ
-	,SourceDensity: SourceDensity
-	,Temp1:Temp1
-	,Temp2:Temp2
+        numVxlProperties: numVxlProperties
+	,srcVolNumProperties: srcVolNumProperties
+        ,FlowX: FlowX
+        ,FlowY: FlowY
+        ,FlowZ: FlowZ
+        ,Density: Density
+        ,Temp1:Temp1
+        ,Temp2:Temp2
     }
 
 }

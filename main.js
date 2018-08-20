@@ -1,78 +1,49 @@
 const StableFluid = require('./js/fluid.js').StableFluid;
+const sc = StableFluid.consts ;
 const fs = require('fs');
 
 /// File output seggings
 const OUT_FILE_NAME_PREFIX='data/vol_';
-const FRAMES = 100 ;
+const FRAMES = 128 ;
 
 const siz = 64 ; // Volume dimension (including boundary)
 const xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
 
-const dt = 0.1 ;
-const bSourceExistsOnlyFirstFrame = false ;
-const sourceDensityForDemo = 100 ;
-const flowYForDemo = 1000 ;
+const sourceDensityForDemo = 10 ;
+const flowYForDemo = 30 ;
 
-const diffuseConst = 0.001 ; // Diffuse
+const diffuseConst = 0.0001 ; // Diffuse
+const viscosityConst = 0.001 ; // Viscousity
+
+const dt = 0.1 ;
 
 // Define volume
-let srcVoxel = [];
-let zeroVoxel = [];
-for( let zvi=0;zvi<StableFluid.consts.numVxlProperties;++zvi ) zeroVoxel.push(0);
-for( let zi=0;zi<siz;++zi ){
-    srcVoxel.push([]);
-    for( let yi=0;yi<siz;++yi ){
-	srcVoxel[zi].push([]);
-	for( let xi=0;xi<siz;++xi ){
-	    // FlowX, FlowY, FlowZ, Density, Tmp
-	    srcVoxel[zi][yi].push( Array.from(zeroVoxel) );
-	}
-    }
-}
+let volData , srcVol ;
+volData = StableFluid.allocateZeroVolume(siz);
 
-function setSquareSourceDemo(srcVoxel){
-    const xsiz = srcVoxel[0][0].length-2 ;
-    const ysiz = srcVoxel[0].length-2 ;
-    const zsiz = srcVoxel.length-2 ;
+// Setup srcVol
+(function(){
+    srcVol = StableFluid.allocateZeroVolume(siz, sc.numVxlProperties);
 
+    // Setup flow source
     const c = Math.floor(xsiz/2.0)+1;  // Center
-    const r = Math.floor(xsiz/10.0);   // Source area r/2
-    for( let iz = c-r ; iz <= c+r ; ++iz ){
-	for( let ix = c-r ; ix <= c+r ; ++ix ){
-	    srcVoxel[iz][1][ix][StableFluid.consts.SourceDensity]
-		= sourceDensityForDemo ;
-	    srcVoxel[iz][1][ix][StableFluid.consts.FlowY]
-		= flowYForDemo ;
-	}
-    }
-}
+    const cy = Math.floor(xsiz/4.0)+1;  // Center Y
+    const r = Math.floor(xsiz/5.0);   // Source area r/2
 
-function resetSource(srcVoxel){
-    const xsiz = srcVoxel[0][0].length-2 ;
-    const ysiz = srcVoxel[0].length-2 ;
-    const zsiz = srcVoxel.length-2 ;
-    for( let zi=1;zi<=zsiz;++zi ){
-	for( let yi=1;yi<=ysiz;++yi ){
-	    for( let xi=1;xi<=xsiz;++xi ){
-		const vxl = srcVoxel[zi][yi][xi];
-		vxl[StableFluid.consts.SourceFlowX]
-		    = vxl[StableFluid.consts.SourceFlowY]
-		    = vxl[StableFluid.consts.SourceFlowZ]
-		    = vxl[StableFluid.consts.SourceDensity]
-		    = 0;
+    function setValToVol(vxl,propId,value){
+	for( let iz = c-r ; iz <= c+r ; ++iz ){
+	    for( let iy = cy-r ; iy <= cy+r ; ++iy ){
+		for( let ix = c-r ; ix <= c+r ; ++ix ){
+		    vxl[iz][iy][ix][propId] = value ;
+		}
 	    }
 	}
     }
-}
+    setValToVol(srcVol,sc.Density,sourceDensityForDemo);
+    setValToVol(srcVol,sc.FlowY,flowYForDemo);
 
-
-
-
-
-setSquareSourceDemo(srcVoxel)
-
-StableFluid.connect(srcVoxel);
-
+})() ;
+StableFluid.connect(volData);
 
 // See p.118 of mitsuba renderer document
 // https://www.mitsuba-renderer.org/releases/current/documentation.pdf
@@ -93,14 +64,15 @@ buf.writeFloatBE( 1.0 , 40 ); // # ymax
 buf.writeFloatBE( 1.0 , 44 ); // # zmax
 
 for( let frameId = 0 ; frameId < FRAMES ; ++frameId ){
-    StableFluid.step(dt,diffuseConst);
+    StableFluid.step(dt,diffuseConst,viscosityConst,srcVol);
+    srcVol = null ;
 
     // Copy voxel densities to buffer
     let bi = 48 ;
     for( let zi=0;zi<siz;++zi ){
 	for( let yi=0;yi<siz;++yi ){
 	    for( let xi=0;xi<siz;++xi , bi+=4){
-		buf.writeFloatBE( srcVoxel[zi][yi][xi][StableFluid.consts.Density] , bi );
+		buf.writeFloatBE( StableFluid.vol[zi][yi][xi][sc.Density] , bi );
 	    }
 	}
     }
