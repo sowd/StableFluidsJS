@@ -1,10 +1,21 @@
 // Implements Stam's Stable Fluid
 // https://pdfs.semanticscholar.org/847f/819a4ea14bd789aca8bc88e85e906cfc657c.pdf
 
-// Voxel properties
+// Default source control params
+const sourceDensityForDemo = 3 ;
+const flowYForDemo = 50 ;
+let defaultSourceOnCount = 5 ;
+const defaultSourceOnInterval = 10 ;
+
+// Basic fluid properties
+const diffuseConst = 0.00001 ; // Diffuse
+const viscosityConst = 0.0001 ; // Viscousity
+
+// Voxel properties constants
 const numVxlProperties = 6 , srcVolNumProperties = 4 ;
 const FlowX = 0 , FlowY = 1 , FlowZ = 2 , Density = 3 ;
 const Temp1 = 4 , Temp2 = 5;
+
 
 
 // Add source information (in 'SourceDensity' element of each voxel)
@@ -20,6 +31,7 @@ function addSource(dt, vol, prevVol, srcVol, propId){
         }
     }
 }
+
 function copyVol( srcVol,tgtVol,propId ){
     const N = srcVol.length-2;
     for( let iz=0 ; iz<N+2 ; ++iz){
@@ -217,27 +229,17 @@ function setBnd(vol,propId,b){
 // if vData is invalid or non-regular-hexahedron,
 // this returns -1.
 
-function getDim(vol){
-    return (    vol        == null
-	     || vol.length != vol[0].length
-	     || vol.length != vol[0][0].length)
-	? -1 : vol.length ;
-}
-
-function allocateZeroVolume(_siz, dim){
-    let siz = _siz ;
+function allocateZeroVolume(siz, dim){
     dim = ( dim != null ? dim : numVxlProperties ) ;
     console.log('Volume dim: '+JSON.stringify([siz,siz,siz]));
-    let xsiz , ysiz , zsiz ;
-    xsiz = ysiz = zsiz = siz-2;
     let srcVolume = [];
     let zeroVoxel = [];
     for( let zvi=0;zvi<dim;++zvi ) zeroVoxel.push(0);
-    for( let zi=0;zi<zsiz+2;++zi ){
+    for( let zi=0;zi<siz;++zi ){
 	srcVolume.push([]);
-	for( let yi=0;yi<ysiz+2;++yi ){
+	for( let yi=0;yi<siz;++yi ){
 	    srcVolume[zi].push([]);
-	    for( let xi=0;xi<xsiz+2;++xi ){
+	    for( let xi=0;xi<siz;++xi ){
 		// FlowX, FlowY, FlowZ, Density, Tmp
 		srcVolume[zi][yi].push( Array.from(zeroVoxel) );
 	    }
@@ -250,34 +252,79 @@ function volumeZeroFill(vol){
     vol.forEach(zvol=>{
 	zvol.forEach(yvol=>{
 	    yvol.forEach(xvol=>{
-		xvol.filter
+		xvol.fill(0);
 	    });
 	})
     });
 }
 
+let defaultSourceVolume ;
+let defaultSourceOnCountdown ;
+function getDefaultSourceVolume(refVol, t){
+    if( defaultSourceVolume == null || defaultSourceVolume.length != refVol.length ){
+	defaultSourceVolume = allocateZeroVolume( refVol.length , srcVolNumProperties ) ;
+	const xsiz = refVol.length-2 ;
+
+	const c = Math.floor(xsiz/2.0)+1;  // Center
+	const cy = Math.floor(xsiz/4.0)+1;  // Center Y
+	const r = Math.floor(xsiz/10.0);   // Source area r/2
+	function setValToVol(vxl,propId,value){
+	    for( let iz = c-r ; iz <= c+r ; ++iz ){
+		for( let iy = cy-r ; iy <= cy+r ; ++iy ){
+		    for( let ix = c-r ; ix <= c+r ; ++ix ){
+			vxl[iz][iy][ix][propId] = value ;
+		    }
+		}
+	    }
+	}
+	setValToVol(defaultSourceVolume,Density,sourceDensityForDemo);
+	setValToVol(defaultSourceVolume,FlowY,flowYForDemo);
+
+	defaultSourceOnCountdown = 1 ;
+    }
+
+    if( defaultSourceOnCount == 0 ) return null ;
+
+    if( --defaultSourceOnCountdown == 0 ){
+	--defaultSourceOnCount ;
+	defaultSourceOnCountdown = defaultSourceOnInterval;
+	return defaultSourceVolume ;
+    }
+    return null ;
+}
 
 const StableFluid = {
     // vol : [iz][iy][ix] (should be regular cube and one-layer buffer voxel
     //       is necessary around all faces
     connect : function (vol){
-        if( getDim(vol) == -1 ){
+	if (    vol        == null
+		|| vol.length != vol[0].length
+		|| vol.length != vol[0][0].length ){
             alert('Invalid voxel data is specified for StabeFluid:connect()');
             return;
-        }
-        this.vol = vol;
+	}
+	this.vol = vol;
 	this._tmpVol = allocateZeroVolume(vol.length) ;
+	this.t = 0;
     }
 
-        
-    ,step : function( dt , _diffuse , _viscosity , srcVol){
-        const diff = (_diffuse != null ? _diffuse : 1) ;
-	const viscosity = (_viscosity != null ? _viscosity : 1 );
+    // srcVol can be null (no source), true (default), or real volume
+    // that stores same xyz dimentions as connected vol and has srcVolNumProperties
+    // elements vector for each voxel. (each FlowX,FlowY,FlowZ,Density should be specified)
+    ,step : function( dt, srcVol){
+        const diff = diffuseConst ;
+	const viscosity = viscosityConst ;
     
         let vol = this._tmpVol ;
         let volPrev = this.vol ;
 
-        function swapVol(){
+	this.t += dt ;
+	if( srcVol === true ){
+	    srcVol = getDefaultSourceVolume(vol, this.t);
+	}
+
+
+	function swapVol(){
             let tmpVol = vol ; vol = volPrev ; volPrev = tmpVol ;
         }
 

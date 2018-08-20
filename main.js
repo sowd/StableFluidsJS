@@ -8,23 +8,16 @@ const FRAMES = 128 ;
 
 const siz = 64 ; // Volume dimension (including boundary)
 const xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
-
-const sourceDensityForDemo = 10 ;
-const flowYForDemo = 30 ;
-
-const diffuseConst = 0.0001 ; // Diffuse
-const viscosityConst = 0.001 ; // Viscousity
-
 const dt = 0.1 ;
 
 // Define volume
-let volData , srcVol ;
+let volData ;
 volData = StableFluid.allocateZeroVolume(siz);
 
-// Setup srcVol
+let srcVol = true ; // true uses default simulation setup
+// Or optionally specify source density/flows
+/*srcVol = StableFluid.allocateZeroVolume(siz, sc.numVxlProperties);
 (function(){
-    srcVol = StableFluid.allocateZeroVolume(siz, sc.numVxlProperties);
-
     // Setup flow source
     const c = Math.floor(xsiz/2.0)+1;  // Center
     const cy = Math.floor(xsiz/4.0)+1;  // Center Y
@@ -43,6 +36,8 @@ volData = StableFluid.allocateZeroVolume(siz);
     setValToVol(srcVol,sc.FlowY,flowYForDemo);
 
 })() ;
+*/
+
 StableFluid.connect(volData);
 
 // See p.118 of mitsuba renderer document
@@ -64,8 +59,7 @@ buf.writeFloatBE( 1.0 , 40 ); // # ymax
 buf.writeFloatBE( 1.0 , 44 ); // # zmax
 
 for( let frameId = 0 ; frameId < FRAMES ; ++frameId ){
-    StableFluid.step(dt,diffuseConst,viscosityConst,srcVol);
-    srcVol = null ;
+    StableFluid.step(dt, srcVol);
 
     // Copy voxel densities to buffer
     let bi = 48 ;

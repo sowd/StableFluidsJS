@@ -3,12 +3,6 @@
 let siz = 16 ; // Should be power of two
 let xsiz = siz-2, ysiz = siz-2, zsiz = siz-2 ;
 
-const sourceDensityForDemo = 10 ;
-const flowYForDemo = 30 ;
-
-const diffuseConst = 0.0001 ; // Diffuse
-const viscosityConst = 0.001 ; // Viscousity
-
 const dt = 0.1 ;
 
 const bFloatVoxel = false ; // if false, voxel is stored as uint8
@@ -21,7 +15,7 @@ const numZPlanes = 128 ; // Number of planes to slice volume
 const voxelBrightness = 30.0 ;
 
 let scene,ctrl,renderer,camera;
-let volData , srcVol ;
+let volData ;
 
 onload = function(){
     // Start creation of the whole scene
@@ -80,34 +74,11 @@ onload = function(){
 	    // set volData
 	    volData = StableFluid.allocateZeroVolume(siz);
 	    xsiz = ysiz = zsiz = siz-2;
-	    srcVol = StableFluid.allocateZeroVolume(siz, srcVolNumProperties);
-
-	    // Setup flow source
-	    const c = Math.floor(xsiz/2.0)+1;  // Center
-	    const cy = Math.floor(xsiz/4.0)+1;  // Center Y
-	    const r = Math.floor(xsiz/6.0);   // Source area r/2
-
-	    function setValToVol(vxl,propId,value){
-		for( let iz = c-r ; iz <= c+r ; ++iz ){
-		    for( let iy = cy-r ; iy <= cy+r ; ++iy ){
-			for( let ix = c-r ; ix <= c+r ; ++ix ){
-			    vxl[iz][iy][ix][propId] = value ;
-			}
-		    }
-		}
-	    }
-	    setValToVol(srcVol,Density,sourceDensityForDemo);
-	    setValToVol(srcVol,FlowY,flowYForDemo);
-	    
 	    StableFluid.connect(volData);
 
 	    renderMain(()=>{
 		// Update simulation and reflect it to texture
-		StableFluid.step(dt , diffuseConst , viscosityConst , srcVol);
-
-		srcVol = null // Clear all source after first frame
-		//setValToVol(srcVol,Density,0); // Clear density source
-		//setValToVol(srcVol,FlowY,0);
+		StableFluid.step(dt, true /*srcVol*/);
 
 		Render.set4DFloatVoxelArray(StableFluid.vol);
 		Render.updateTextureByStoredTxVol();
